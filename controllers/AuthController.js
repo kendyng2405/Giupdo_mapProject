@@ -1,8 +1,12 @@
 // controllers/AuthController.js
 import { auth } from "../models/firebase.js";
 import {
-  createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, sendPasswordResetEmail, sendEmailVerification, updateProfile
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  updateProfile,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { UserModel } from "../models/UserModel.js";
 import { router } from "./Router.js";
@@ -13,79 +17,110 @@ export const AuthController = {
   async showLogin({ user }) {
     if (user) { router.navigate("/home"); return; }
     renderView("login");
-    document.getElementById("app").addEventListener("submit", async (e) => {
-      if (e.target.id !== "login-form") return;
+    await _nextTick();
+    const form = document.getElementById("login-form");
+    if (!form) { console.error("login-form not found"); return; }
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const btn = e.target.querySelector("[type=submit]");
-      const email = e.target.email.value;
-      const password = e.target.password.value;
+      const btn = form.querySelector("[type=submit]");
+      const email = form.querySelector("[name=email]")?.value?.trim();
+      const password = form.querySelector("[name=password]")?.value;
+      if (!email || !password) { Toast.show("Vui long dien day du thong tin.", "error"); return; }
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Đang đăng nhập...';
+      btn.innerHTML = '<span class="spinner"></span> Dang dang nhap...';
       try {
         await signInWithEmailAndPassword(auth, email, password);
         router.navigate("/home");
-        Toast.show("Chào mừng trở lại!");
+        Toast.show("Chao mung tro lai!");
       } catch (err) {
-        let msg = "Đăng nhập thất bại.";
-        if (err.code === "auth/wrong-password" || err.code === "auth/user-not-found" || err.code === "auth/invalid-credential") msg = "Email hoặc mật khẩu không đúng.";
-        if (err.code === "auth/too-many-requests") msg = "Quá nhiều lần thử. Vui lòng thử lại sau.";
+        console.error("Login error:", err.code, err.message);
+        let msg = "Dang nhap that bai.";
+        if (["auth/wrong-password","auth/user-not-found","auth/invalid-credential","auth/invalid-email"].includes(err.code))
+          msg = "Email hoac mat khau khong dung.";
+        else if (err.code === "auth/too-many-requests") msg = "Qua nhieu lan thu. Thu lai sau.";
+        else if (err.code === "auth/network-request-failed") msg = "Loi mang. Kiem tra ket noi.";
         Toast.show(msg, "error");
-        btn.disabled = false; btn.textContent = "Đăng nhập";
+        btn.disabled = false; btn.textContent = "Dang nhap";
       }
-    }, { once: true });
+    });
   },
 
   async showRegister({ user }) {
     if (user) { router.navigate("/home"); return; }
     renderView("register");
-    document.getElementById("app").addEventListener("submit", async (e) => {
-      if (e.target.id !== "register-form") return;
+    await _nextTick();
+    const form = document.getElementById("register-form");
+    if (!form) { console.error("register-form not found"); return; }
+    form.querySelector("[name=password]")?.addEventListener("input", function() {
+      const v = this.value;
+      const score = [v.length>=6,v.length>=10,/[A-Z]/.test(v),/[0-9]/.test(v),/[^a-zA-Z0-9]/.test(v)].filter(Boolean).length;
+      const fill = document.getElementById("pwd-bar-fill");
+      const colors = ["#EF4444","#F97316","#EAB308","#10B981","#22C55E"];
+      if (fill) { fill.style.width=(score*20)+"%"; fill.style.background=colors[score-1]||"transparent"; }
+    });
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const btn = e.target.querySelector("[type=submit]");
-      const { email, password, fullName, phone } = Object.fromEntries(new FormData(e.target));
-      if (password.length < 6) { Toast.show("Mật khẩu phải có ít nhất 6 ký tự.", "error"); return; }
+      const btn = form.querySelector("[type=submit]");
+      const fullName = form.querySelector("[name=fullName]")?.value?.trim();
+      const phone    = form.querySelector("[name=phone]")?.value?.trim();
+      const email    = form.querySelector("[name=email]")?.value?.trim();
+      const password = form.querySelector("[name=password]")?.value;
+      if (!fullName || !phone || !email || !password) { Toast.show("Vui long dien day du thong tin.", "error"); return; }
+      if (password.length < 6) { Toast.show("Mat khau phai co it nhat 6 ky tu.", "error"); return; }
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Đang tạo tài khoản...';
+      btn.innerHTML = '<span class="spinner"></span> Dang tao tai khoan...';
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(cred.user, { displayName: fullName });
-        await sendEmailVerification(cred.user);
         await UserModel.create(cred.user.uid, { email, fullName, phone });
+        sendEmailVerification(cred.user).catch(() => {});
         router.navigate("/home");
-        Toast.show("Tạo tài khoản thành công! Vui lòng xác thực email.");
+        Toast.show("Tao tai khoan thanh cong!");
       } catch (err) {
-        let msg = "Đăng ký thất bại.";
-        if (err.code === "auth/email-already-in-use") msg = "Email đã được sử dụng.";
+        console.error("Register error:", err.code, err.message);
+        let msg = "Dang ky that bai.";
+        if (err.code === "auth/email-already-in-use") msg = "Email nay da duoc su dung.";
+        else if (err.code === "auth/invalid-email")   msg = "Email khong hop le.";
+        else if (err.code === "auth/weak-password")   msg = "Mat khau qua yeu.";
+        else if (err.code === "auth/network-request-failed") msg = "Loi mang.";
         Toast.show(msg, "error");
-        btn.disabled = false; btn.textContent = "Tạo tài khoản";
+        btn.disabled = false; btn.textContent = "Tao tai khoan";
       }
-    }, { once: true });
+    });
   },
 
-  async showForgotPassword() {
+  async showForgotPassword({ user }) {
+    if (user) { router.navigate("/home"); return; }
     renderView("forgot-password");
-    document.getElementById("app").addEventListener("submit", async (e) => {
-      if (e.target.id !== "forgot-form") return;
+    await _nextTick();
+    const form = document.getElementById("forgot-form");
+    if (!form) return;
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const btn = e.target.querySelector("[type=submit]");
-      const email = e.target.email.value;
+      const btn = form.querySelector("[type=submit]");
+      const email = form.querySelector("[name=email]")?.value?.trim();
+      if (!email) { Toast.show("Vui long nhap email.", "error"); return; }
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Đang gửi...';
+      btn.innerHTML = '<span class="spinner"></span> Dang gui...';
       try {
         await sendPasswordResetEmail(auth, email);
-        Toast.show("Email đặt lại mật khẩu đã được gửi. Kiểm tra hộp thư của bạn.");
-        e.target.reset();
-      } catch {
-        Toast.show("Không thể gửi email. Kiểm tra lại địa chỉ.", "error");
+        Toast.show("Email dat lai mat khau da duoc gui!");
+        form.reset();
+      } catch (err) {
+        Toast.show("Khong the gui email. Kiem tra lai dia chi.", "error");
       } finally {
-        btn.disabled = false; btn.textContent = "Gửi email đặt lại";
+        btn.disabled = false; btn.textContent = "Gui email dat lai";
       }
-    }, { once: true });
+    });
   },
 
   async logout() {
-    await signOut(auth);
+    await signOut(auth).catch(console.error);
     router.navigate("/home");
-    Toast.show("Đã đăng xuất.");
+    Toast.show("Da dang xuat.");
   },
 };
+
+function _nextTick() {
+  return new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+}
