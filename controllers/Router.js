@@ -1,4 +1,4 @@
-// controllers/Router.js — MVC2 Front Controller: URL routing
+// controllers/Router.js — MVC2 Front Controller
 import { auth } from "../models/firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { UserModel } from "../models/UserModel.js";
@@ -11,6 +11,7 @@ class Router {
     this._authReady = false;
     this._authReadyResolve = null;
     this.authReady = new Promise(r => this._authReadyResolve = r);
+    this._rendering = false;
   }
 
   register(path, handler) {
@@ -19,30 +20,36 @@ class Router {
   }
 
   async init() {
-    // Watch auth state
     onAuthStateChanged(auth, async (user) => {
       this.currentUser = user;
       if (user) {
-        try { this.currentUserData = await UserModel.findById(user.uid); } catch(e) {}
+        try {
+          this.currentUserData = await UserModel.findById(user.uid);
+        } catch(e) {
+          console.error("UserModel.findById error:", e);
+          this.currentUserData = null;
+        }
       } else {
         this.currentUserData = null;
       }
+
+      // Update navbar FIRST, then render
+      this._updateNavbar();
+
       if (!this._authReady) {
         this._authReady = true;
         this._authReadyResolve();
+      } else {
+        // Auth changed after initial load — re-render
+        await this._renderCurrent();
       }
-      // Re-render current route on auth change
-      this._renderCurrent();
-      // Update navbar
-      this._updateNavbar();
     });
 
-    // Hash-based routing
     window.addEventListener("hashchange", () => this._renderCurrent());
-    window.addEventListener("popstate", () => this._renderCurrent());
 
     await this.authReady;
-    this._renderCurrent();
+    this._updateNavbar();
+    await this._renderCurrent();
   }
 
   navigate(path) {
@@ -55,36 +62,46 @@ class Router {
   }
 
   async _renderCurrent() {
-    const path = this._getCurrentPath();
-    // Match exact or dynamic (e.g. /location/:id)
-    let handler = this.routes[path];
-    let params = {};
+    if (this._rendering) return;
+    this._rendering = true;
+    try {
+      const path = this._getCurrentPath();
+      let handler = this.routes[path];
+      let params = {};
 
-    if (!handler) {
-      for (const [route, h] of Object.entries(this.routes)) {
-        if (route.includes(":")) {
-          const regex = new RegExp("^" + route.replace(/:[^/]+/g, "([^/]+)") + "$");
-          const match = path.match(regex);
-          if (match) {
-            handler = h;
-            const keys = [...route.matchAll(/:([^/]+)/g)].map(m => m[1]);
-            keys.forEach((k, i) => params[k] = match[i + 1]);
-            break;
+      if (!handler) {
+        for (const [route, h] of Object.entries(this.routes)) {
+          if (route.includes(":")) {
+            const regex = new RegExp("^" + route.replace(/:[^/]+/g, "([^/]+)") + "$");
+            const match = path.match(regex);
+            if (match) {
+              handler = h;
+              const keys = [...route.matchAll(/:([^/]+)/g)].map(m => m[1]);
+              keys.forEach((k, i) => params[k] = match[i + 1]);
+              break;
+            }
           }
         }
       }
+
+      if (!handler) {
+        const app = document.getElementById("app");
+        if (app) app.innerHTML = `<div style="text-align:center;padding:120px 24px;">
+          <h1 style="font-family:'Playfair Display',serif;font-size:5rem;color:var(--border);">404</h1>
+          <p style="margin-bottom:24px;color:var(--text-muted);">Trang khong tim thay</p>
+          <a href="#/home" class="btn btn--primary">Ve ban do</a>
+        </div>`;
+        return;
+      }
+
+      document.querySelectorAll("[data-nav]").forEach(el => {
+        el.classList.toggle("active", el.dataset.nav === path);
+      });
+
+      await handler({ user: this.currentUser, userData: this.currentUserData, params });
+    } finally {
+      this._rendering = false;
     }
-
-    if (!handler) handler = this.routes["/404"] || (() => {
-      document.getElementById("app").innerHTML = `<div class="not-found"><h1>404</h1><p>Trang không tìm thấy</p><a href="#/home" class="btn btn--primary">Về trang chủ</a></div>`;
-    });
-
-    // Update active nav links
-    document.querySelectorAll("[data-nav]").forEach(el => {
-      el.classList.toggle("active", el.dataset.nav === path || (path === "/home" && el.dataset.nav === "/home"));
-    });
-
-    await handler({ user: this.currentUser, userData: this.currentUserData, params });
   }
 
   _updateNavbar() {
