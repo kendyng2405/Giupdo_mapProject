@@ -27,7 +27,7 @@ const views = {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
         </button>
       </div>
-      <div id=""></div>
+      <div id="map"></div>
       <div class="map-filter-bar">
         <span class="map-count-badge" id="map-count-badge" style="position:static;background:transparent;border:none;box-shadow:none;padding:4px 6px;font-size:.78rem;color:var(--text-muted);white-space:nowrap;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
