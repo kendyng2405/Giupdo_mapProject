@@ -85,11 +85,11 @@ function _initMapWhenReady(locations, user, userData) {
   L.tileLayer(
   isDark
     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    : "http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
   {
-    attribution: "&copy; CARTO &copy; OSM",
-    maxZoom: 19,
-    subdomains: "abcd",
+    subdomains: ["mt0", "mt1", "mt2", "mt3"],
+    attribution: '&copy; <a href="https://www.google.com/maps">Google Maps</a>',
+    maxZoom: 20,
   }
 ).addTo(mapInstance);
 
