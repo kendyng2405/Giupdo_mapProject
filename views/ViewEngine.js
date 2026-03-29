@@ -27,8 +27,13 @@ const views = {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
         </button>
       </div>
-      <div id="map"></div>
+      <div id=""></div>
       <div class="map-filter-bar">
+        <span class="map-count-badge" id="map-count-badge" style="position:static;background:transparent;border:none;box-shadow:none;padding:4px 6px;font-size:.78rem;color:var(--text-muted);white-space:nowrap;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span id="map-count-badge">0 địa điểm</span>
+        </span>
+        <div style="width:1px;height:16px;background:var(--border);margin:0 4px;"></div>
         <button class="filter-chip active" data-filter="all">Tất cả</button>
         <button class="filter-chip" data-filter="critical"><span class="dot" style="background:#EF4444"></span>Rất khẩn</button>
         <button class="filter-chip" data-filter="urgent"><span class="dot" style="background:#EAB308"></span>Khẩn cấp</button>
