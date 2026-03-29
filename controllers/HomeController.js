@@ -84,7 +84,7 @@ function _initMapWhenReady(locations, user, userData) {
       L.tileLayer(
   isDark
     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    : "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    : "https://tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
   {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19,
