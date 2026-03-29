@@ -85,7 +85,7 @@ function _initMapWhenReady(locations, user, userData) {
   L.tileLayer(
   isDark
     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    : "http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+    : "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
   {
     subdomains: ["mt0", "mt1", "mt2", "mt3"],
     attribution: '&copy; <a href="https://www.google.com/maps">Google Maps</a>',
