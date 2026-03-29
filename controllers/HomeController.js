@@ -81,7 +81,7 @@ function _initMapWhenReady(locations, user, userData) {
       L.control.zoom({ position: "topright" }).addTo(mapInstance);
 
       const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-      L.tileLayer(
+      
   L.tileLayer(
   isDark
     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
