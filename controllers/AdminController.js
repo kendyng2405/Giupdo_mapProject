@@ -25,21 +25,26 @@ export const AdminController = {
 
   async showCreate({ userData }) {
     renderView("admin-location-form", { userData, location: null, helpTypes: HELP_TYPES, urgency: URGENCY });
+    await _nextTick();
     _initMapPicker(null, null);
     _initLocationForm(null, userData);
   },
 
   async showEdit({ userData, params }) {
-    const location = await LocationModefindById(params.id);
-    if (!location) { Toast.show("Khong tim thay dia diem.", "error"); router.navigate("/admin/dashboard"); return; }
+    const location = await LocationModel.findById(params.id);
+    if (!location) {
+      Toast.show("Không tìm thấy địa điểm.", "error");
+      router.navigate("/admin/dashboard");
+      return;
+    }
     renderView("admin-location-form", { userData, location, helpTypes: HELP_TYPES, urgency: URGENCY });
+    await _nextTick();
     _initMapPicker(location.lat, location.lng);
     _initLocationForm(location, userData);
   },
 };
 
 function _initDashboardEvents(locations) {
-  // Search
   document.getElementById("loc-search")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     document.querySelectorAll(".loc-row").forEach(row => {
@@ -47,23 +52,24 @@ function _initDashboardEvents(locations) {
     });
   });
 
-  // Toggle / Delete buttons (event delegation)
   document.getElementById("locations-tbody")?.addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
     const id = btn.dataset.id;
     const action = btn.dataset.action;
+
     if (action === "toggle") {
-      const loc = locations.find(l => id === id);
+      const loc = locations.find(l => l.id === id);
       if (!loc) return;
-      await LocationModetoggleActive(id, !loc.isActive);
-      Toast.show(`Da ${loc.isActive ? "an" : "hien"} dia diem.`);
+      await LocationModel.toggleActive(id, !loc.isActive);
+      Toast.show(`Đã ${loc.isActive ? "ẩn" : "hiện"} địa điểm.`);
       router.navigate("/admin/dashboard");
     }
+
     if (action === "delete") {
-      if (!confirm("Xac nhan xoa dia diem nay?")) return;
-      await LocationModedelete(id);
-      Toast.show("Da xoa dia diem.");
+      if (!confirm("Xác nhận xóa địa điểm này?")) return;
+      await LocationModel.delete(id);
+      Toast.show("Đã xóa địa điểm.");
       router.navigate("/admin/dashboard");
     }
   });
@@ -74,15 +80,24 @@ let pickerMap = null, pickerMarker = null;
 function _initMapPicker(lat, lng) {
   const el = document.getElementById("map-picker");
   if (!el) return;
-  if (pickerMap) { pickerMap.remove(); pickerMap = null; }
-  pickerMap = map("map-picker", {
+
+  if (pickerMap) {
+    try { pickerMap.off(); pickerMap.remove(); } catch(e) {}
+    pickerMap = null;
+    pickerMarker = null;
+  }
+
+  pickerMap = L.map("map-picker", {
     center: [lat || 16.047, lng || 108.206],
     zoom: lat ? 15 : 6,
   });
+
   L.tileLayer("https://tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 19,
-}).addTo(pickerMap);
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  }).addTo(pickerMap);
+
+  pickerMap.invalidateSize();
 
   if (lat && lng) _placePickerMarker(lat, lng);
 
@@ -92,11 +107,12 @@ function _initMapPicker(lat, lng) {
   });
 
   document.getElementById("picker-locate")?.addEventListener("click", () => {
-    navigator.geolocation?.getCurrentPosition(pos => {
+    if (!navigator.geolocation) { Toast.show("Trình duyệt không hỗ trợ định vị.", "error"); return; }
+    navigator.geolocation.getCurrentPosition(pos => {
       pickerMap.setView([pos.coords.latitude, pos.coords.longitude], 16);
       _placePickerMarker(pos.coords.latitude, pos.coords.longitude);
       _reverseGeocode(pos.coords.latitude, pos.coords.longitude);
-    });
+    }, () => Toast.show("Không thể lấy vị trí.", "error"));
   });
 }
 
@@ -111,43 +127,60 @@ function _placePickerMarker(lat, lng) {
 
 async function _reverseGeocode(lat, lng) {
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=vi`);
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=vi`,
+      { headers: { "Accept-Language": "vi" } }
+    );
     const data = await res.json();
     const el = document.getElementById("input-address");
     if (el && data.display_name) el.value = data.display_name;
-  } catch {}
+  } catch(e) {}
 }
 
 function _initLocationForm(location, userData) {
   document.getElementById("location-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector("[type=submit]");
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Dang luu...';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Đang lưu...';
     try {
       const fd = new FormData(e.target);
       const data = {
-        title: fd.get("title"), description: fd.get("description"),
-        lat: fd.get("lat"), lng: fd.get("lng"),
-        address: fd.get("address"), note: fd.get("note"),
+        title: fd.get("title"),
+        description: fd.get("description"),
+        lat: fd.get("lat"),
+        lng: fd.get("lng"),
+        address: fd.get("address"),
+        note: fd.get("note"),
         helpTypes: fd.getAll("helpTypes"),
         urgency: fd.get("urgency"),
         peopleCount: fd.get("peopleCount"),
-        timeFrom: fd.get("timeFrom"), timeTo: fd.get("timeTo"),
+        timeFrom: fd.get("timeFrom"),
+        timeTo: fd.get("timeTo"),
+        imageUrl: fd.get("imageUrl") || location?.imageUrl || null,
         createdBy: userData?.uid,
-        existingImageUrl: location?.imageUrl || null,
       };
+
+      if (!data.lat || !data.lng) {
+        Toast.show("Vui lòng chọn vị trí trên bản đồ.", "error");
+        btn.disabled = false;
+        btn.textContent = location ? "Lưu thay đổi" : "Thêm địa điểm";
+        return;
+      }
+
       if (location) {
         await LocationModel.update(location.id, data);
-        Toast.show("Da cap nhat dia diem!");
+        Toast.show("Đã cập nhật địa điểm!");
       } else {
         await LocationModel.create(data);
-        Toast.show("Da them dia diem moi!");
+        Toast.show("Đã thêm địa điểm mới!");
       }
       router.navigate("/admin/dashboard");
     } catch (err) {
       console.error(err);
-      Toast.show("Loi luu dia diem.", "error");
-      btn.disabled = false; btn.textContent = location ? "Luu thay doi" : "Them dia diem";
+      Toast.show("Lỗi lưu địa điểm.", "error");
+      btn.disabled = false;
+      btn.textContent = location ? "Lưu thay đổi" : "Thêm địa điểm";
     }
   });
 
@@ -160,9 +193,13 @@ function _initLocationForm(location, userData) {
       prev.src = url;
       wrap.style.display = "block";
       prev.onerror = () => { wrap.style.display = "none"; };
-      prev.onload = () => { wrap.style.display = "block"; };
+      prev.onload  = () => { wrap.style.display = "block"; };
     } else if (wrap) {
       wrap.style.display = "none";
     }
   });
+}
+
+function _nextTick() {
+  return new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 50)));
 }
