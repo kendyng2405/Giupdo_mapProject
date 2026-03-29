@@ -6,23 +6,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trai Tim Viet — Ban do tu thien</title>
   <meta name="description" content="Ket noi nguoi muon tu thien voi nhung dia diem can ho tro">
-
-  <!-- Prevent theme flash -->
   <script>
     (function(){
       const t = localStorage.getItem('ttv_theme') || 'light';
       document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
-
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <!-- Main CSS -->
   <link rel="stylesheet" href="public/css/main.css">
 </head>
 <body>
 
-<!-- NAVBAR -->
 <nav class="navbar" id="navbar">
   <div class="navbar-inner">
     <a href="#/home" class="nav-brand">
@@ -32,17 +26,16 @@
 
     <div class="nav-links" id="main-nav">
       <a href="#/home" class="nav-link" data-nav="/home">Ban do</a>
-      <span id="nav-admin" class="hidden">
+      <span id="nav-admin" style="display:none;">
         <a href="#/admin/dashboard" class="nav-link" data-nav="/admin/dashboard">Quan tri</a>
         <a href="#/admin/locations/new" class="nav-link" data-nav="/admin/locations/new">Them dia diem</a>
       </span>
-      <span id="nav-user-link" class="hidden">
+      <span id="nav-user-link" style="display:none;">
         <a href="#/profile" class="nav-link" data-nav="/profile">Ho so</a>
       </span>
     </div>
 
     <div class="nav-actions">
-      <!-- Theme toggle -->
       <button class="theme-toggle" id="theme-btn" aria-label="Chuyen che do sang/toi">
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="5"/>
@@ -56,15 +49,13 @@
         </svg>
       </button>
 
-      <!-- Guest nav -->
-      <div id="nav-guest">
+      <div id="nav-guest" style="display:flex;align-items:center;gap:8px;">
         <a href="#/login" class="btn btn--ghost btn--sm">Dang nhap</a>
         <a href="#/register" class="btn btn--primary btn--sm">Dang ky</a>
       </div>
 
-      <!-- User nav (hidden until login) -->
-      <div id="nav-user" class="hidden" style="display:flex;align-items:center;gap:8px;">
-        <a href="#/profile" class="nav-user-pill" id="nav-user-pill">
+      <div id="nav-user" style="display:none;align-items:center;gap:8px;">
+        <a href="#/profile" class="nav-user-pill">
           <div class="nav-avatar" id="nav-avatar">U</div>
           <div>
             <div class="nav-user-name" id="nav-username">...</div>
@@ -81,58 +72,54 @@
   </div>
 </nav>
 
-<!-- MAIN APP CONTAINER -->
-<div id="app"></div>
-
-<!-- TOAST CONTAINER -->
+<div id="app" role="main"></div>
 <div id="toast-container" class="toast-container"></div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
-<!-- Theme & Burger (inline for instant response) -->
 <script>
-  // Theme toggle
   document.getElementById('theme-btn').addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('ttv_theme', next);
   });
 
-  // Burger menu
   document.getElementById('burger-btn').addEventListener('click', () => {
     document.getElementById('main-nav').classList.toggle('open');
   });
 
-  // Update navbar user area from Router
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#logout-btn')) {
+      e.preventDefault();
+      import('./controllers/AuthController.js').then(m => m.AuthController.logout());
+    }
+  });
+
   window._updateNavbarUser = function(userData) {
-  const isLoggedIn = !!userData;
-  const isAdmin = userData?.role === 'admin';
+    const isLoggedIn = !!userData;
+    const isAdmin    = userData?.role === 'admin';
 
-  const guestEl = document.getElementById('nav-guest');
-  const userEl  = document.getElementById('nav-user');
-  const adminEl = document.getElementById('nav-admin');
-  const userLinkEl = document.getElementById('nav-user-link');
+    const guestEl    = document.getElementById('nav-guest');
+    const userEl     = document.getElementById('nav-user');
+    const adminEl    = document.getElementById('nav-admin');
+    const userLinkEl = document.getElementById('nav-user-link');
 
-  if (guestEl)    guestEl.style.display    = isLoggedIn ? 'none' : 'flex';
-  if (userEl)     userEl.style.display     = isLoggedIn ? 'flex' : 'none';
-  if (adminEl)    adminEl.style.display    = isAdmin    ? 'inline' : 'none';
-  if (userLinkEl) userLinkEl.style.display = isLoggedIn ? 'inline' : 'none';
+    if (guestEl)    guestEl.style.display    = isLoggedIn ? 'none'   : 'flex';
+    if (userEl)     userEl.style.display     = isLoggedIn ? 'flex'   : 'none';
+    if (adminEl)    adminEl.style.display    = isAdmin    ? 'inline' : 'none';
+    if (userLinkEl) userLinkEl.style.display = isLoggedIn ? 'inline' : 'none';
 
-  if (userData) {
-    const initial = (userData.fullName || 'U').charAt(0).toUpperCase();
-    const el = document.getElementById('nav-avatar');
-    const nm = document.getElementById('nav-username');
-    const rk = document.getElementById('nav-rank');
-    if (el) el.textContent = initial;
-    if (nm) nm.textContent = userData.fullName || '';
-    if (rk) rk.textContent = userData.rank?.name || 'Dong Long';
-  }
-};
+    if (userData) {
+      const avatarEl = document.getElementById('nav-avatar');
+      const nameEl   = document.getElementById('nav-username');
+      const rankEl   = document.getElementById('nav-rank');
+      if (avatarEl) avatarEl.textContent = (userData.fullName || 'U').charAt(0).toUpperCase();
+      if (nameEl)   nameEl.textContent   = userData.fullName || '';
+      if (rankEl)   rankEl.textContent   = userData.rank?.name || 'Dong Long';
+    }
+  };
 </script>
 
-<!-- App entry point (ES modules) -->
 <script type="module" src="app.js"></script>
 
 </body>
