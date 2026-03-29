@@ -22,10 +22,10 @@ const views = {
         <p>Đăng nhập để hỗ trợ và tích lũy điểm</p>
         <a href="#/login" class="btn btn--primary btn--sm">Đăng nhập</a>
       </div>` : ""}
-      <div class="map-count-badge">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        Đang tải...
-      </div>
+//      <div class="map-count-badge">
+//        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+//        Đang tải...
+//      </div>
       <div class="map-controls">
         <button class="map-ctrl-btn" id="locate-btn" title="Vị trí của tôi">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
