@@ -483,3 +483,17 @@ textarea.form-control { resize:vertical; min-height:90px; }
 .map-filter-bar { z-index: 450 !important; }
 .map-leaderboard { z-index: 450 !important; }
 .map-sidebar { z-index: 500 !important; }
+
+/* Fix map height */
+.map-wrap {
+  position: relative;
+  margin-top: 66px;
+  height: calc(100vh - 66px);
+  overflow: hidden;
+}
+
+#map {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 400px;
+}
