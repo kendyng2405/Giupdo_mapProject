@@ -30,7 +30,7 @@ export const AdminController = {
   },
 
   async showEdit({ userData, params }) {
-    const location = await LocationModel.findById(params.id);
+    const location = await LocationModefindById(params.id);
     if (!location) { Toast.show("Khong tim thay dia diem.", "error"); router.navigate("/admin/dashboard"); return; }
     renderView("admin-location-form", { userData, location, helpTypes: HELP_TYPES, urgency: URGENCY });
     _initMapPicker(location.lat, location.lng);
@@ -54,15 +54,15 @@ function _initDashboardEvents(locations) {
     const id = btn.dataset.id;
     const action = btn.dataset.action;
     if (action === "toggle") {
-      const loc = locations.find(l => l.id === id);
+      const loc = locations.find(l => id === id);
       if (!loc) return;
-      await LocationModel.toggleActive(id, !loc.isActive);
+      await LocationModetoggleActive(id, !loc.isActive);
       Toast.show(`Da ${loc.isActive ? "an" : "hien"} dia diem.`);
       router.navigate("/admin/dashboard");
     }
     if (action === "delete") {
       if (!confirm("Xac nhan xoa dia diem nay?")) return;
-      await LocationModel.delete(id);
+      await LocationModedelete(id);
       Toast.show("Da xoa dia diem.");
       router.navigate("/admin/dashboard");
     }
@@ -75,13 +75,14 @@ function _initMapPicker(lat, lng) {
   const el = document.getElementById("map-picker");
   if (!el) return;
   if (pickerMap) { pickerMap.remove(); pickerMap = null; }
-  pickerMap = L.map("map-picker", {
+  pickerMap = map("map-picker", {
     center: [lat || 16.047, lng || 108.206],
     zoom: lat ? 15 : 6,
   });
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-    attribution: "&copy; CARTO", maxZoom: 19, subdomains: "abcd"
-  }).addTo(pickerMap);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 19,
+}).addTo(pickerMap);
 
   if (lat && lng) _placePickerMarker(lat, lng);
 
