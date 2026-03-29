@@ -97,10 +97,13 @@ function _initMapWhenReady(locations, user, userData) {
       _plotMarkers(locations, user, userData);
 
       // Count badge
-      const badge = document.querySelector(".map-count-badge");
-      if (badge) badge.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        ${locations.length} dia diem`;
+      //const badge = document.querySelector(".map-count-badge");
+      //if (badge) badge.innerHTML = `
+        //<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        //${locations.length} dia diem`;
+
+      const badge = document.getElementById("map-count-badge");
+if (badge) badge.textContent = `${locations.length} địa điểm`;
 
       // Fit bounds
       if (locations.length > 0 && markersLayer.length > 0) {
