@@ -92,12 +92,11 @@ function _initMapPicker(lat, lng) {
     zoom: lat ? 15 : 6,
   });
 
-  L.tileLayer("https://tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    maxZoom: 19,
-  }).addTo(pickerMap);
-
-  pickerMap.invalidateSize();
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 19,
+  subdomains: "abc",
+}).addTo(pickerMap);
 
   if (lat && lng) _placePickerMarker(lat, lng);
 
