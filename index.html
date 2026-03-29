@@ -107,27 +107,29 @@
 
   // Update navbar user area from Router
   window._updateNavbarUser = function(userData) {
-    const isLoggedIn = !!userData;
-    const isAdmin = userData?.role === 'admin';
+  const isLoggedIn = !!userData;
+  const isAdmin = userData?.role === 'admin';
 
-    document.getElementById('nav-guest').classList.toggle('hidden', isLoggedIn);
-    const navUser = document.getElementById('nav-user');
-    navUser?.classList.toggle('hidden', !isLoggedIn);
-    if (isLoggedIn) navUser?.style.setProperty('display','flex');
-    
-    document.getElementById('nav-admin')?.classList.toggle('hidden', !isAdmin);
-    document.getElementById('nav-user-link')?.classList.toggle('hidden', !isLoggedIn);
+  const guestEl = document.getElementById('nav-guest');
+  const userEl  = document.getElementById('nav-user');
+  const adminEl = document.getElementById('nav-admin');
+  const userLinkEl = document.getElementById('nav-user-link');
 
-    if (userData) {
-      const initial = (userData.fullName || 'U').charAt(0).toUpperCase();
-      const el = document.getElementById('nav-avatar');
-      const nm = document.getElementById('nav-username');
-      const rk = document.getElementById('nav-rank');
-      if (el) el.textContent = initial;
-      if (nm) nm.textContent = userData.fullName || '';
-      if (rk) rk.textContent = userData.rank?.name || 'Dong Long';
-    }
-  };
+  if (guestEl)    guestEl.style.display    = isLoggedIn ? 'none' : 'flex';
+  if (userEl)     userEl.style.display     = isLoggedIn ? 'flex' : 'none';
+  if (adminEl)    adminEl.style.display    = isAdmin    ? 'inline' : 'none';
+  if (userLinkEl) userLinkEl.style.display = isLoggedIn ? 'inline' : 'none';
+
+  if (userData) {
+    const initial = (userData.fullName || 'U').charAt(0).toUpperCase();
+    const el = document.getElementById('nav-avatar');
+    const nm = document.getElementById('nav-username');
+    const rk = document.getElementById('nav-rank');
+    if (el) el.textContent = initial;
+    if (nm) nm.textContent = userData.fullName || '';
+    if (rk) rk.textContent = userData.rank?.name || 'Dong Long';
+  }
+};
 </script>
 
 <!-- App entry point (ES modules) -->
