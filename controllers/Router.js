@@ -52,9 +52,13 @@ class Router {
     await this._renderCurrent();
   }
 
+  //navigate(path) {
+  //  window.location.hash = path;
+  //}
   navigate(path) {
-    window.location.hash = path;
-  }
+  this._rendering = false;
+  window.location.hash = path;
+}
 
   _getCurrentPath() {
     const hash = window.location.hash.replace("#", "") || "/home";
