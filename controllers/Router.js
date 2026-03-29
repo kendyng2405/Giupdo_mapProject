@@ -11,7 +11,6 @@ class Router {
     this._authReady = false;
     this._authReadyResolve = null;
     this.authReady = new Promise(r => this._authReadyResolve = r);
-    this._rendering = false;
   }
 
   register(path, handler) {
@@ -26,22 +25,17 @@ class Router {
         try {
           this.currentUserData = await UserModel.findById(user.uid);
         } catch(e) {
-          console.error("UserModel.findById error:", e);
           this.currentUserData = null;
         }
       } else {
         this.currentUserData = null;
       }
-
-      // Update navbar FIRST, then render
       this._updateNavbar();
-
       if (!this._authReady) {
         this._authReady = true;
         this._authReadyResolve();
       } else {
-        // Auth changed after initial load — re-render
-        await this._renderCurrent();
+        this._renderCurrent();
       }
     });
 
@@ -49,16 +43,16 @@ class Router {
 
     await this.authReady;
     this._updateNavbar();
-    await this._renderCurrent();
+    this._renderCurrent();
   }
 
-  //navigate(path) {
-  //  window.location.hash = path;
-  //}
   navigate(path) {
-  this._rendering = false;
-  window.location.hash = path;
-}
+    if (window.location.hash === "#" + path) {
+      this._renderCurrent();
+    } else {
+      window.location.hash = path;
+    }
+  }
 
   _getCurrentPath() {
     const hash = window.location.hash.replace("#", "") || "/home";
@@ -66,46 +60,40 @@ class Router {
   }
 
   async _renderCurrent() {
-    if (this._rendering) return;
-    this._rendering = true;
-    try {
-      const path = this._getCurrentPath();
-      let handler = this.routes[path];
-      let params = {};
+    const path = this._getCurrentPath();
+    let handler = this.routes[path];
+    let params = {};
 
-      if (!handler) {
-        for (const [route, h] of Object.entries(this.routes)) {
-          if (route.includes(":")) {
-            const regex = new RegExp("^" + route.replace(/:[^/]+/g, "([^/]+)") + "$");
-            const match = path.match(regex);
-            if (match) {
-              handler = h;
-              const keys = [...route.matchAll(/:([^/]+)/g)].map(m => m[1]);
-              keys.forEach((k, i) => params[k] = match[i + 1]);
-              break;
-            }
+    if (!handler) {
+      for (const [route, h] of Object.entries(this.routes)) {
+        if (route.includes(":")) {
+          const regex = new RegExp("^" + route.replace(/:[^/]+/g, "([^/]+)") + "$");
+          const match = path.match(regex);
+          if (match) {
+            handler = h;
+            const keys = [...route.matchAll(/:([^/]+)/g)].map(m => m[1]);
+            keys.forEach((k, i) => params[k] = match[i + 1]);
+            break;
           }
         }
       }
-
-      if (!handler) {
-        const app = document.getElementById("app");
-        if (app) app.innerHTML = `<div style="text-align:center;padding:120px 24px;">
-          <h1 style="font-family:'Playfair Display',serif;font-size:5rem;color:var(--border);">404</h1>
-          <p style="margin-bottom:24px;color:var(--text-muted);">Trang khong tim thay</p>
-          <a href="#/home" class="btn btn--primary">Ve ban do</a>
-        </div>`;
-        return;
-      }
-
-      document.querySelectorAll("[data-nav]").forEach(el => {
-        el.classList.toggle("active", el.dataset.nav === path);
-      });
-
-      await handler({ user: this.currentUser, userData: this.currentUserData, params });
-    } finally {
-      this._rendering = false;
     }
+
+    if (!handler) {
+      const app = document.getElementById("app");
+      if (app) app.innerHTML = `<div style="text-align:center;padding:120px 24px;">
+        <h1 style="font-family:'Playfair Display',serif;font-size:5rem;color:var(--border);">404</h1>
+        <p style="margin-bottom:24px;color:var(--text-muted);">Trang khong tim thay</p>
+        <a href="#/home" class="btn btn--primary">Ve ban do</a>
+      </div>`;
+      return;
+    }
+
+    document.querySelectorAll("[data-nav]").forEach(el => {
+      el.classList.toggle("active", el.dataset.nav === path);
+    });
+
+    await handler({ user: this.currentUser, userData: this.currentUserData, params });
   }
 
   _updateNavbar() {
