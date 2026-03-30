@@ -465,6 +465,9 @@ textarea.form-control { resize:vertical; min-height:90px; }
 
 /* Leaflet dark mode tile fix */
 .leaflet-tile-pane { filter: none; }
+[data-theme="dark"] .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9);
+}
 [data-theme="dark"] .leaflet-container { background: #1a1410; }
 
 /* Fix Leaflet controls z-index */
